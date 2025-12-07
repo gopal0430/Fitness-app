@@ -1,6 +1,18 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { 
+    View, 
+    Text, 
+    TextInput, 
+    TouchableOpacity, 
+    FlatList, 
+    StyleSheet, 
+    ActivityIndicator, 
+    KeyboardAvoidingView, 
+    Platform 
+} from 'react-native';
+import { Send, Bot, Sparkles } from 'lucide-react-native';
+import Markdown from 'react-native-markdown-display';
 import { getFitnessInsights, chatWithCoach } from '../services/geminiService';
 import { ClientProfile, DailyStats, ActivitySession, ChatMessage } from '../types';
 
@@ -15,7 +27,7 @@ const AICoach: React.FC<AICoachProps> = ({ client, stats, activities }) => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     // Initial insight on load
@@ -29,7 +41,9 @@ const AICoach: React.FC<AICoachProps> = ({ client, stats, activities }) => {
   }, [client, stats, activities]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+        flatListRef.current?.scrollToEnd({ animated: true });
+    }
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -51,83 +65,224 @@ const AICoach: React.FC<AICoachProps> = ({ client, stats, activities }) => {
     setMessages(prev => [...prev, botMsg]);
   };
 
+  const renderMessage = ({ item }: { item: ChatMessage }) => (
+    <View style={[
+        styles.messageRow, 
+        item.role === 'user' ? styles.userRow : styles.botRow
+    ]}>
+        <View style={[
+            styles.bubble, 
+            item.role === 'user' ? styles.userBubble : styles.botBubble
+        ]}>
+             {/* Note: React Native Markdown Display handles rendering text */}
+            <Markdown style={markdownStyles}>
+                {item.text}
+            </Markdown>
+        </View>
+    </View>
+  );
+
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm overflow-hidden">
+    <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+    >
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 flex items-center gap-3">
-        <div className="p-2 bg-white/20 rounded-full">
-          <Bot className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-white font-bold text-lg">Gemini Coach</h2>
-          <p className="text-blue-100 text-xs">AI-powered fitness analysis</p>
-        </div>
-      </div>
+      <View style={styles.header}>
+        <View style={styles.iconContainer}>
+          <Bot size={24} color="#fff" />
+        </View>
+        <View>
+          <Text style={styles.headerTitle}>Gemini Coach</Text>
+          <Text style={styles.headerSubtitle}>AI-powered fitness analysis</Text>
+        </View>
+      </View>
 
       {/* Daily Insight Section */}
-      <div className="p-4 bg-indigo-50 border-b border-indigo-100">
-        <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-sm font-semibold text-indigo-800">Daily Briefing</h3>
-        </div>
+      <View style={styles.insightSection}>
+        <View style={styles.insightHeader}>
+            <Sparkles size={16} color="#4f46e5" />
+            <Text style={styles.insightTitle}>Daily Briefing</Text>
+        </View>
         {loading && !insight ? (
-           <div className="flex items-center gap-2 text-indigo-500 text-sm">
-             <Loader2 className="w-4 h-4 animate-spin" />
-             Analyzing your metrics...
-           </div>
+           <View style={styles.loadingRow}>
+             <ActivityIndicator size="small" color="#6366f1" />
+             <Text style={styles.loadingText}>Analyzing your metrics...</Text>
+           </View>
         ) : (
-          <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-             <ReactMarkdown>{insight || ''}</ReactMarkdown>
-          </div>
+          <View style={styles.markdownWrapper}>
+             <Markdown style={markdownStyles}>{insight || ''}</Markdown>
+          </View>
         )}
-      </div>
+      </View>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {messages.length === 0 && (
-          <div className="text-center text-gray-400 mt-10 text-sm">
-            <p>Ask me about your workout, diet, or recovery.</p>
-          </div>
-        )}
-        {messages.map((msg, idx) => (
-          <div 
-            key={idx} 
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div 
-              className={`max-w-[80%] p-3 rounded-2xl text-sm shadow-sm ${
-                msg.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-br-none' 
-                  : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'
-              }`}
-            >
-              <ReactMarkdown>{msg.text}</ReactMarkdown>
-            </div>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(_, index) => index.toString()}
+        contentContainerStyle={styles.chatList}
+        ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Ask me about your workout, diet, or recovery.</Text>
+            </View>
+        }
+      />
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t flex gap-2">
-        <input 
-          type="text"
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+      <View style={styles.inputContainer}>
+        <TextInput 
+          style={styles.input}
           placeholder="Ask your coach..."
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+          onChangeText={setInputValue}
+          placeholderTextColor="#9ca3af"
         />
-        <button 
-          onClick={handleSendMessage}
+        <TouchableOpacity 
+          onPress={handleSendMessage}
           disabled={!inputValue.trim()}
-          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={[styles.sendButton, !inputValue.trim() && styles.disabledButton]}
         >
-          <Send className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+          <Send size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
+
+const markdownStyles = StyleSheet.create({
+    body: { color: '#374151', fontSize: 14 },
+    strong: { fontWeight: 'bold', color: '#1f2937' },
+});
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#2563eb', // Blue-600
+  },
+  iconContainer: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    color: '#dbeafe',
+    fontSize: 12,
+  },
+  insightSection: {
+    padding: 16,
+    backgroundColor: '#eef2ff', // Indigo-50
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e7ff',
+    maxHeight: 200,
+  },
+  insightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  insightTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3730a3',
+  },
+  markdownWrapper: {
+    // Markdown styling container
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    color: '#6366f1',
+    fontSize: 14,
+  },
+  chatList: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  userRow: {
+    justifyContent: 'flex-end',
+  },
+  botRow: {
+    justifyContent: 'flex-start',
+  },
+  bubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 16,
+  },
+  userBubble: {
+    backgroundColor: '#2563eb',
+    borderBottomRightRadius: 2,
+  },
+  botBubble: {
+    backgroundColor: '#f3f4f6',
+    borderBottomLeftRadius: 2,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  emptyContainer: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  inputContainer: {
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1f2937',
+    marginRight: 8,
+  },
+  sendButton: {
+    backgroundColor: '#2563eb',
+    padding: 10,
+    borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  }
+});
+
+// Override specific markdown styles for user bubbles (white text)
+// Note: library limitations might require custom rendering or checking props if you want dynamic text color
+// For simplicity, we keep text dark in both bubbles or standard logic
 
 export default AICoach;

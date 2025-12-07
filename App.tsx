@@ -1,6 +1,17 @@
 
 import React, { useState } from 'react';
 import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  ScrollView, 
+  TouchableOpacity, 
+  Image, 
+  SafeAreaView, 
+  StatusBar,
+  Dimensions
+} from 'react-native';
+import { 
   Activity, 
   Home, 
   User, 
@@ -11,8 +22,8 @@ import {
   Calendar,
   ChevronRight,
   TrendingUp,
-  Moon
-} from 'lucide-react';
+  Menu
+} from 'lucide-react-native';
 import RadialProgress from './components/RadialProgress';
 import ActivityChart from './components/ActivityChart';
 import SleepCard from './components/SleepCard';
@@ -28,264 +39,578 @@ enum Tab {
   Coach = 'Coach'
 }
 
+const { width } = Dimensions.get('window');
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Dashboard);
-  const [selectedDay, setSelectedDay] = useState<DailyStats>(WEEKLY_STATS[WEEKLY_STATS.length - 1]);
-
+  
   // Derived Values
-  const todayStats = selectedDay;
+  const todayStats = WEEKLY_STATS[WEEKLY_STATS.length - 1];
   const stepsProgress = todayStats.steps;
   const heartPointsProgress = todayStats.heartPoints;
 
   const renderDashboard = () => (
-    <div className="space-y-6 pb-24 animate-fade-in">
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       {/* Top Rings Section */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 via-blue-500 to-green-400" />
+      <View style={styles.card}>
+        <View style={styles.cardHeaderGradient} />
         
-        <h2 className="text-gray-500 font-medium mb-6 text-sm uppercase tracking-wide">Today's Goals</h2>
+        <Text style={styles.sectionTitle}>TODAY'S GOALS</Text>
         
-        <div className="flex gap-4 items-end justify-center">
+        <View style={styles.ringsContainer}>
           <RadialProgress 
             value={heartPointsProgress} 
             max={GOALS.heartPoints} 
-            size={120} 
+            size={100} 
             strokeWidth={10} 
             color="#3b82f6" // Blue
-            icon={<Heart className="w-6 h-6 text-blue-500 fill-current" />}
+            icon={<Heart size={20} color="#3b82f6" fill="#3b82f6" />}
             label="Heart Pts"
           />
+          <View style={{ width: 20 }} />
           <RadialProgress 
             value={stepsProgress} 
             max={GOALS.steps} 
-            size={160} 
+            size={130} 
             strokeWidth={12} 
             color="#22c55e" // Green
-            icon={<Footprints className="w-8 h-8 text-green-500 fill-current" />}
+            icon={<Footprints size={24} color="#22c55e" fill="#22c55e" />}
             label="Steps"
           />
-        </div>
+        </View>
 
-        <div className="grid grid-cols-3 gap-8 mt-8 w-full text-center">
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{todayStats.moveMinutes}</p>
-            <p className="text-xs text-gray-500 uppercase font-semibold mt-1">Move Min</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{todayStats.calories}</p>
-            <p className="text-xs text-gray-500 uppercase font-semibold mt-1">Cal</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{todayStats.distanceKm || '4.2'}</p>
-            <p className="text-xs text-gray-500 uppercase font-semibold mt-1">Km</p>
-          </div>
-        </div>
-      </div>
+        <View style={styles.statsGrid}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{todayStats.moveMinutes}</Text>
+            <Text style={styles.statLabel}>MOVE MIN</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{todayStats.calories}</Text>
+            <Text style={styles.statLabel}>CAL</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{todayStats.distanceKm || '4.2'}</Text>
+            <Text style={styles.statLabel}>KM</Text>
+          </View>
+        </View>
+      </View>
 
-      {/* Sleep Tracker Card - New Feature */}
+      {/* Sleep Tracker Card */}
       <SleepCard todayStats={todayStats} weeklyStats={WEEKLY_STATS} />
 
       {/* Weekly Charts */}
-      <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-2">
-            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-500" />
-                This Week
-            </h3>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Steps</span>
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+            <View style={styles.row}>
+                <TrendingUp size={20} color="#3b82f6" />
+                <Text style={styles.cardTitle}>This Week</Text>
+            </View>
+            <View style={styles.badge}>
+                <Text style={styles.badgeText}>Steps</Text>
+            </View>
         </div>
         <ActivityChart data={WEEKLY_STATS} dataKey="steps" color="#22c55e" />
-      </div>
+      </View>
 
        {/* Recent Activity Mini List */}
-       <div className="space-y-3">
-        <h3 className="font-bold text-gray-800 px-2">Recent Activity</h3>
+       <View style={styles.sectionContainer}>
+        <Text style={styles.sectionHeader}>Recent Activity</Text>
         {RECENT_ACTIVITIES.slice(0, 2).map(activity => (
-            <div key={activity.id} className="bg-white p-4 rounded-2xl flex items-center justify-between shadow-sm border border-gray-100">
-                <div className="flex items-center gap-4">
-                    <div className="bg-orange-100 p-3 rounded-full text-orange-600">
-                        {activity.type === 'Run' ? <Flame className="w-6 h-6" /> : <Activity className="w-6 h-6" />}
-                    </div>
-                    <div>
-                        <p className="font-semibold text-gray-800">{activity.type}</p>
-                        <p className="text-xs text-gray-500">{new Date(activity.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {activity.caloriesBurned} cal</p>
-                    </div>
-                </div>
-                <div className="text-right">
-                     <p className="font-bold text-gray-800">{activity.distanceKm ? `${activity.distanceKm} km` : `${activity.durationMinutes} min`}</p>
-                </div>
-            </div>
+            <View key={activity.id} style={styles.miniActivityCard}>
+                <View style={styles.row}>
+                    <View style={styles.iconContainerOrange}>
+                        {activity.type === 'Run' ? <Flame size={24} color="#ea580c" /> : <Activity size={24} color="#ea580c" />}
+                    </View>
+                    <View>
+                        <Text style={styles.activityTitle}>{activity.type}</Text>
+                        <Text style={styles.activitySub}>
+                            {new Date(activity.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {activity.caloriesBurned} cal
+                        </Text>
+                    </View>
+                </View>
+                <View>
+                     <Text style={styles.activityValue}>{activity.distanceKm ? `${activity.distanceKm} km` : `${activity.durationMinutes} min`}</Text>
+                </View>
+            </View>
         ))}
-       </div>
-    </div>
+       </View>
+    </ScrollView>
   );
 
   const renderJournal = () => (
-    <div className="space-y-4 pb-24">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2">Activity Journal</h2>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <Text style={styles.pageTitle}>Activity Journal</Text>
       {RECENT_ACTIVITIES.map((activity) => (
-        <div key={activity.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start mb-2">
-             <div className="flex items-center gap-2">
-                 <Calendar className="w-4 h-4 text-gray-400" />
-                 <span className="text-xs text-gray-500 font-medium">
+        <View key={activity.id} style={styles.journalCard}>
+          <View style={styles.journalHeader}>
+             <View style={styles.row}>
+                 <Calendar size={14} color="#9ca3af" />
+                 <Text style={styles.journalDate}>
                      {new Date(activity.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric'})}
-                 </span>
-             </div>
-             <ChevronRight className="w-4 h-4 text-gray-300" />
-          </div>
-          <div className="flex items-center gap-4 mt-2">
-             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                <Activity className="w-6 h-6" />
-             </div>
-             <div>
-                 <h3 className="font-bold text-gray-800 text-lg">{activity.type}</h3>
-                 <div className="flex gap-3 text-sm text-gray-600 mt-1">
-                     <span>{activity.durationMinutes} min</span>
-                     <span>•</span>
-                     <span>{activity.caloriesBurned} kcal</span>
+                 </Text>
+             </View>
+             <ChevronRight size={16} color="#d1d5db" />
+          </View>
+          <View style={[styles.row, { marginTop: 10 }]}>
+             <View style={styles.iconContainerBlue}>
+                <Activity size={24} color="#2563eb" />
+             </View>
+             <View>
+                 <Text style={styles.journalTitle}>{activity.type}</Text>
+                 <View style={styles.row}>
+                     <Text style={styles.journalMeta}>{activity.durationMinutes} min</Text>
+                     <Text style={styles.journalMeta}> • </Text>
+                     <Text style={styles.journalMeta}>{activity.caloriesBurned} kcal</Text>
                      {activity.distanceKm && (
                          <>
-                            <span>•</span>
-                            <span>{activity.distanceKm} km</span>
+                            <Text style={styles.journalMeta}> • </Text>
+                            <Text style={styles.journalMeta}>{activity.distanceKm} km</Text>
                          </>
                      )}
-                 </div>
-             </div>
-          </div>
-        </div>
+                 </View>
+             </View>
+          </View>
+        </View>
       ))}
-      <div className="mt-8 p-4 bg-gray-50 rounded-xl text-center">
-          <p className="text-gray-500 text-sm">End of history</p>
-      </div>
-    </div>
+      <View style={styles.endOfHistory}>
+          <Text style={styles.endText}>End of history</Text>
+      </View>
+    </ScrollView>
   );
 
   const renderProfile = () => (
-    <div className="space-y-6 pb-24">
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
-        <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden">
-            <img src="https://picsum.photos/200" alt="Profile" className="w-full h-full object-cover" />
-        </div>
-        <div>
-            <h2 className="text-2xl font-bold text-gray-800">{CURRENT_CLIENT.name}</h2>
-            <p className="text-gray-500">{CURRENT_CLIENT.age} years old</p>
-        </div>
-      </div>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.card, styles.row, { padding: 20 }]}>
+        <View style={styles.avatarContainer}>
+            <Image source={{ uri: "https://picsum.photos/200" }} style={styles.avatar} />
+        </View>
+        <View>
+            <Text style={styles.profileName}>{CURRENT_CLIENT.name}</Text>
+            <Text style={styles.profileAge}>{CURRENT_CLIENT.age} years old</Text>
+        </View>
+      </View>
 
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-        <h3 className="font-bold text-gray-800 mb-4">Body Measurements</h3>
-        <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 rounded-2xl">
-                <p className="text-xs text-gray-500 uppercase">Height</p>
-                <p className="text-xl font-bold text-gray-800 mt-1">{CURRENT_CLIENT.heightCm} cm</p>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-2xl">
-                <p className="text-xs text-gray-500 uppercase">Weight</p>
-                <p className="text-xl font-bold text-gray-800 mt-1">{CURRENT_CLIENT.weightKg} kg</p>
-            </div>
-        </div>
-      </div>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Body Measurements</Text>
+        <View style={styles.grid2}>
+            <View style={styles.measurementBox}>
+                <Text style={styles.measurementLabel}>HEIGHT</Text>
+                <Text style={styles.measurementValue}>{CURRENT_CLIENT.heightCm} cm</Text>
+            </View>
+            <View style={styles.measurementBox}>
+                <Text style={styles.measurementLabel}>WEIGHT</Text>
+                <Text style={styles.measurementValue}>{CURRENT_CLIENT.weightKg} kg</Text>
+            </View>
+        </View>
+      </View>
 
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">Goals</h3>
-          <ul className="space-y-3">
+      <View style={styles.card}>
+          <Text style={styles.cardTitle}>Goals</Text>
+          <View style={{ marginTop: 10 }}>
               {CURRENT_CLIENT.goals.map((goal, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      <span className="text-gray-700">{goal}</span>
-                  </li>
+                  <View key={idx} style={[styles.row, { marginBottom: 12 }]}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.goalText}>{goal}</Text>
+                  </View>
               ))}
-          </ul>
-      </div>
-    </div>
+          </View>
+      </View>
+    </ScrollView>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
-        {/* Mobile-first Container */}
-        <div className="w-full max-w-md bg-gray-50 min-h-screen flex flex-col relative shadow-2xl">
-            
-            {/* Header */}
-            <header className="px-6 pt-12 pb-4 bg-white sticky top-0 z-10 shadow-sm/50">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric'})}
-                        </p>
-                        <h1 className="text-2xl font-bold text-gray-900 mt-0.5">
-                            {activeTab === Tab.Dashboard ? 'Summary' : activeTab}
-                        </h1>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden">
-                        <img src="https://picsum.photos/100" className="w-full h-full object-cover" alt="User" />
-                    </div>
-                </div>
-            </header>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+            <Text style={styles.headerDate}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric'})}
+            </Text>
+            <Text style={styles.headerTitle}>
+                {activeTab === Tab.Dashboard ? 'Summary' : activeTab}
+            </Text>
+        </View>
+        <View style={styles.headerAvatar}>
+            <Image source={{ uri: "https://picsum.photos/100" }} style={styles.headerAvatarImg} />
+        </View>
+      </View>
 
-            {/* Main Content Area */}
-            <main className="flex-1 px-4 py-6 overflow-y-auto no-scrollbar scroll-smooth">
-                {activeTab === Tab.Dashboard && renderDashboard()}
-                {activeTab === Tab.Journal && renderJournal()}
-                {activeTab === Tab.Profile && renderProfile()}
-                {activeTab === Tab.Coach && (
-                  <div className="h-[calc(100vh-180px)]">
-                      <AICoach 
-                        client={CURRENT_CLIENT} 
-                        stats={WEEKLY_STATS} 
-                        activities={RECENT_ACTIVITIES} 
-                      />
-                  </div>
-                )}
-            </main>
+      {/* Main Content Area */}
+      <View style={styles.content}>
+        {activeTab === Tab.Dashboard && renderDashboard()}
+        {activeTab === Tab.Journal && renderJournal()}
+        {activeTab === Tab.Profile && renderProfile()}
+        {activeTab === Tab.Coach && (
+            <AICoach 
+            client={CURRENT_CLIENT} 
+            stats={WEEKLY_STATS} 
+            activities={RECENT_ACTIVITIES} 
+            />
+        )}
+      </View>
 
-            {/* Floating Action Button (FAB) - Only on Dashboard */}
-            {activeTab === Tab.Dashboard && (
-              <button 
-                onClick={() => setActiveTab(Tab.Coach)}
-                className="absolute bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center text-white hover:scale-105 transition-transform z-20"
-              >
-                  <MessageSquare className="w-6 h-6" />
-              </button>
-            )}
+      {/* Floating Action Button (FAB) */}
+      {activeTab === Tab.Dashboard && (
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={() => setActiveTab(Tab.Coach)}
+        >
+            <MessageSquare size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
 
-            {/* Bottom Navigation */}
-            <nav className="bg-white border-t border-gray-200 h-20 flex justify-around items-start pt-4 fixed bottom-0 w-full max-w-md z-30">
-                <button 
-                  onClick={() => setActiveTab(Tab.Dashboard)}
-                  className={`flex flex-col items-center gap-1 w-16 ${activeTab === Tab.Dashboard ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <Home className={`w-6 h-6 ${activeTab === Tab.Dashboard ? 'fill-current' : ''}`} />
-                    <span className="text-[10px] font-medium">Home</span>
-                </button>
-
-                <button 
-                  onClick={() => setActiveTab(Tab.Journal)}
-                  className={`flex flex-col items-center gap-1 w-16 ${activeTab === Tab.Journal ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <Activity className={`w-6 h-6 ${activeTab === Tab.Journal ? 'fill-current' : ''}`} />
-                    <span className="text-[10px] font-medium">Journal</span>
-                </button>
-
-                <button 
-                  onClick={() => setActiveTab(Tab.Coach)}
-                  className={`flex flex-col items-center gap-1 w-16 ${activeTab === Tab.Coach ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <MessageSquare className={`w-6 h-6 ${activeTab === Tab.Coach ? 'fill-current' : ''}`} />
-                    <span className="text-[10px] font-medium">Coach</span>
-                </button>
-
-                <button 
-                  onClick={() => setActiveTab(Tab.Profile)}
-                  className={`flex flex-col items-center gap-1 w-16 ${activeTab === Tab.Profile ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <User className={`w-6 h-6 ${activeTab === Tab.Profile ? 'fill-current' : ''}`} />
-                    <span className="text-[10px] font-medium">Profile</span>
-                </button>
-            </nav>
-        </div>
-    </div>
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        {[
+            { id: Tab.Dashboard, icon: Home, label: 'Home' },
+            { id: Tab.Journal, icon: Activity, label: 'Journal' },
+            { id: Tab.Coach, icon: MessageSquare, label: 'Coach' },
+            { id: Tab.Profile, icon: User, label: 'Profile' },
+        ].map((item) => (
+            <TouchableOpacity 
+                key={item.id}
+                onPress={() => setActiveTab(item.id)}
+                style={styles.navItem}
+            >
+                <item.icon 
+                    size={24} 
+                    color={activeTab === item.id ? '#2563eb' : '#9ca3af'} 
+                    fill={activeTab === item.id && item.id !== Tab.Coach ? '#2563eb' : 'none'}
+                />
+                <Text style={[
+                    styles.navLabel, 
+                    { color: activeTab === item.id ? '#2563eb' : '#9ca3af' }
+                ]}>
+                    {item.label}
+                </Text>
+            </TouchableOpacity>
+        ))}
+      </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 2,
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#e5e7eb',
+  },
+  headerAvatarImg: {
+    width: '100%',
+    height: '100%',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  cardHeaderGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#3b82f6', // Simplified gradient
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  ringsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 32,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginLeft: 8,
+  },
+  badge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 10,
+    color: '#4b5563',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionContainer: {
+    marginTop: 8,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
+    marginLeft: 8,
+  },
+  miniActivityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  iconContainerOrange: {
+    backgroundColor: '#ffedd5',
+    padding: 10,
+    borderRadius: 20,
+    marginRight: 16,
+  },
+  iconContainerBlue: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  activitySub: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  activityValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  journalCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 24,
+    marginLeft: 8,
+  },
+  journalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  journalDate: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginLeft: 8,
+  },
+  journalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  journalMeta: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginTop: 4,
+  },
+  endOfHistory: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  endText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#e5e7eb',
+    overflow: 'hidden',
+    marginRight: 16,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  profileAge: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  grid2: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  measurementBox: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    padding: 16,
+    borderRadius: 16,
+  },
+  measurementLabel: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  measurementValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  bullet: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 12,
+  },
+  goalText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    paddingBottom: 20, // Safe area padding
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  navItem: {
+    alignItems: 'center',
+    width: 64,
+  },
+  navLabel: {
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+});
 
 export default App;

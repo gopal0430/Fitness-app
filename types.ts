@@ -1,3 +1,4 @@
+
 export enum ActivityType {
   Walk = 'Walk',
   Run = 'Run',
@@ -25,6 +26,7 @@ export interface DailyStats {
   sleepHours: number;
   heartRateAvg: number;
   weight: number;
+  distanceKm?: number;
 }
 
 export interface ClientProfile {

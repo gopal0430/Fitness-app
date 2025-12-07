@@ -1,3 +1,4 @@
+
 import { ActivityType, ActivitySession, DailyStats, ClientProfile } from './types';
 
 export const CURRENT_CLIENT: ClientProfile = {
@@ -33,7 +34,8 @@ const generateStats = (): DailyStats[] => {
       calories: Math.floor(1800 + Math.random() * 500),
       sleepHours: 6 + Math.random() * 3,
       heartRateAvg: Math.floor(65 + Math.random() * 10),
-      weight: 62 + (Math.random() * 0.5 - 0.25)
+      weight: 62 + (Math.random() * 0.5 - 0.25),
+      distanceKm: parseFloat((3 + Math.random() * 5).toFixed(2))
     });
   }
   return stats;

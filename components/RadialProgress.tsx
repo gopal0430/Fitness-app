@@ -1,4 +1,7 @@
+
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
 
 interface RadialProgressProps {
   value: number;
@@ -22,47 +25,65 @@ const RadialProgress: React.FC<RadialProgressProps> = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const progress = Math.min(value / max, 1);
-  const offset = circumference - progress * circumference;
+  const strokeDashoffset = circumference - progress * circumference;
 
   return (
-    <div className="relative flex flex-col items-center justify-center" style={{ width: size, height: size }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="transform -rotate-90"
-      >
-        {/* Background Circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          className="text-gray-200"
-        />
-        {/* Progress Circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-700">
-        {icon && <div className="mb-1">{icon}</div>}
-        <span className="text-xl font-bold">{value}</span>
-        {label && <span className="text-xs text-gray-500 font-medium">{label}</span>}
-      </div>
-    </div>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Svg width={size} height={size}>
+          {/* Background Circle */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#e5e7eb"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress Circle */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </Svg>
+      </View>
+      <View style={StyleSheet.absoluteFill}>
+        <View style={styles.centerContent}>
+            {icon && <View style={styles.iconWrapper}>{icon}</View>}
+            <Text style={styles.valueText}>{value}</Text>
+            {label && <Text style={styles.labelText}>{label}</Text>}
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapper: {
+    marginBottom: 4,
+  },
+  valueText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+  },
+  labelText: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '600',
+  }
+});
 
 export default RadialProgress;
